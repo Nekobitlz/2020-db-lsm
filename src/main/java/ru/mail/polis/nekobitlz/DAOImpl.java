@@ -6,11 +6,12 @@ import ru.mail.polis.Record;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 public class DAOImpl implements DAO {
 
-    private TreeMap<ByteBuffer, ByteBuffer> data = new TreeMap<>();
+    private SortedMap<ByteBuffer, ByteBuffer> data = new TreeMap<>();
 
     @NotNull
     @Override
