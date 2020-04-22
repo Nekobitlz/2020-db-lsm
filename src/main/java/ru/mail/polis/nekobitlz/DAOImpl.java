@@ -11,7 +11,7 @@ import java.util.TreeMap;
 
 public class DAOImpl implements DAO {
 
-    private SortedMap<ByteBuffer, ByteBuffer> data = new TreeMap<>();
+    private final SortedMap<ByteBuffer, ByteBuffer> data = new TreeMap<>();
 
     @NotNull
     @Override
@@ -37,6 +37,5 @@ public class DAOImpl implements DAO {
     @Override
     public void close() {
         data.clear();
-        data = null;
     }
 }
