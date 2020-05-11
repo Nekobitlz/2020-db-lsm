@@ -74,7 +74,9 @@ public class DAOImpl implements DAO {
             SSTable table = new SSTable(file);
             tables.add(table);
         } catch (IOException e) {
-            logger.error(e.getMessage());
+            logger.error("Failed to create SSTable from " + file.getName() + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.error("File skipped: " + file.getName());
         }
     }
 
@@ -86,7 +88,7 @@ public class DAOImpl implements DAO {
                 try {
                     Files.delete(table.getFile().toPath());
                 } catch (IOException e) {
-                    logger.error(e.getMessage());
+                    logger.error("Failed to delete file " + table.getFile().getName() + e.getMessage());
                 }
             });
             tables.clear();

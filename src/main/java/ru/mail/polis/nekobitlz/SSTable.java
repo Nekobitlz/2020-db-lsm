@@ -56,17 +56,17 @@ public class SSTable {
 
     public Iterator<Item> getIterator(final ByteBuffer from) {
         return new Iterator<>() {
-            long pos = getPosition(from);
+            long position = getPosition(from);
 
             @Override
             public boolean hasNext() {
-                return pos < recordCount;
+                return position < recordCount;
             }
 
             @Override
             public Item next() {
-                final Item item = getItem(pos);
-                pos++;
+                final Item item = getItem(position);
+                position++;
                 return item;
             }
         };

@@ -1,5 +1,7 @@
 package ru.mail.polis.nekobitlz;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -15,13 +17,14 @@ public class SSTableUtils {
     public static final String VALID_FILE_EXTENSION = ".dat";
     private static final String TEMP_FILE_EXTENSION = ".temp";
 
-    public static boolean hasValidFileExtension(Path path) {
+    public static boolean hasValidFileExtension(@NotNull Path path) {
         return path.getFileName()
                 .toString()
                 .endsWith(VALID_FILE_EXTENSION);
     }
 
-    public static Path writeTableToDisk(final Iterator<Item> items, final File folder) throws IOException {
+    @NotNull
+    public static Path writeTableToDisk(@NotNull final Iterator<Item> items, @NotNull final File folder) throws IOException {
         final List<Long> offsets = new ArrayList<>();
         final String uuid = UUID.randomUUID().toString();
 
@@ -49,7 +52,7 @@ public class SSTableUtils {
         return pathComplete;
     }
 
-    private static void writeItemToFile(FileChannel fileChannel, Item currentItem) throws IOException {
+    private static void writeItemToFile(FileChannel fileChannel, @NotNull Item currentItem) throws IOException {
         final ByteBuffer key = currentItem.getKey();
         final ByteBuffer value = currentItem.getValue();
         final ByteBuffer row = ByteBuffer.allocate((int) currentItem.getBytesSize());
@@ -66,7 +69,7 @@ public class SSTableUtils {
         fileChannel.write(row);
     }
 
-    private static void writeOffsetToFile(List<Long> offsets, FileChannel fileChannel) throws IOException {
+    private static void writeOffsetToFile(@NotNull List<Long> offsets, FileChannel fileChannel) throws IOException {
         final int offsetsCount = offsets.size();
         final ByteBuffer offsetsByteBuffer = ByteBuffer.allocate(offsetsCount * Long.BYTES);
         offsets.set(offsetsCount - 1, (long) offsetsCount - 1);

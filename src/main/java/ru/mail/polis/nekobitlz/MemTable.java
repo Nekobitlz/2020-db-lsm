@@ -39,6 +39,7 @@ public final class MemTable {
         calculateBytesSize(data.put(key, item), item);
     }
 
+    @NotNull
     public Path flush(final File folder) throws IOException {
         final Path path = SSTableUtils.writeTableToDisk(data.values().iterator(), folder);
         data.clear();
