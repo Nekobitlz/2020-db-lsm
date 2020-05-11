@@ -28,7 +28,7 @@ public class DAOImpl implements DAO {
     private final Logger logger = LoggerFactory.getLogger(DAOImpl.class);
 
     /**
-     * Constructs a new DAO based on LSM tree
+     * Constructs a new DAO based on LSM tree.
      *
      * @param folder        folder to save data
      * @param bytesHeapSize MemTable size threshold

@@ -18,7 +18,7 @@ public class Item {
     private final long timeStamp;
 
     /**
-     * Data class to store the item
+     * Data class to store the item.
      */
     Item(final ByteBuffer key, final ByteBuffer value, final long timeStamp) {
         this.key = key;

@@ -18,7 +18,7 @@ import java.util.UUID;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 
-public class SSTableUtils {
+public final class SSTableUtils {
 
     public static final String VALID_FILE_EXTENSION = ".dat";
     private static final String TEMP_FILE_EXTENSION = ".temp";
@@ -27,11 +27,11 @@ public class SSTableUtils {
     }
 
     /**
-     * Checks if the file name ends in VALID_FILE_EXTENSION
+     * Checks if the file name ends in VALID_FILE_EXTENSION.
      *
      * @param path file path
      * @return true, if the file name ends with VALID_FILE_EXTENSION
-     * false, if the file name not ends with VALID_FILE_EXTENSION
+     *         false, if the file name not ends with VALID_FILE_EXTENSION
      */
     public static boolean hasValidFileExtension(@NotNull final Path path) {
         return path.getFileName()
@@ -40,7 +40,7 @@ public class SSTableUtils {
     }
 
     /**
-     * Writes new SSTable on disk
+     * Writes new SSTable on disk.
      *
      * @param items  iterator over the data to be written
      * @param folder files directory

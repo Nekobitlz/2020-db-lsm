@@ -36,7 +36,7 @@ public final class MemTable {
     }
 
     /**
-     * Inserts or updates an existing value in a table
+     * Inserts or updates an existing value in a table.
      *
      * @param key   the key by which to insert the value
      * @param value value to be inserted

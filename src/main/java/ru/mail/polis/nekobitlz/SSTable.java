@@ -22,7 +22,7 @@ public class SSTable {
     private final Long recordCount;
 
     /**
-     * Creates Sorted Strings Table
+     * Creates Sorted Strings Table.
      *
      * @param file target file
      * @throws IOException if a write error has occurred
