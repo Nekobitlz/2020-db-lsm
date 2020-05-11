@@ -42,13 +42,13 @@ public class DAOImpl implements DAO {
 
     @NotNull
     @Override
-    public Iterator<Record> iterator(@NotNull ByteBuffer from) {
+    public Iterator<Record> iterator(@NotNull final ByteBuffer from) {
         final Iterator<Item> itemIterator = createItemIterator(from);
         return Iterators.transform(itemIterator, i -> Record.of(i.getKey(), i.getValue()));
     }
 
     @Override
-    public void upsert(@NotNull ByteBuffer key, @NotNull ByteBuffer value) throws IOException {
+    public void upsert(@NotNull final ByteBuffer key, @NotNull final ByteBuffer value) throws IOException {
         memTable.upsert(key, value);
         if (memTable.isFlushNeeded()) {
             flushTable();
@@ -68,9 +68,9 @@ public class DAOImpl implements DAO {
         memTable.flush(folder);
     }
 
-    private void createNewSSTable(File file) {
+    private void createNewSSTable(final File file) {
         try {
-            SSTable table = new SSTable(file);
+            final SSTable table = new SSTable(file);
             tables.add(table);
         } catch (IOException e) {
             logger.error("Failed to create SSTable from " + file.getName() + e.getMessage());

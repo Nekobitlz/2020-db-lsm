@@ -9,10 +9,10 @@ import java.nio.ByteOrder;
 import java.nio.LongBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.util.Iterator;
 
-import static java.nio.file.StandardOpenOption.*;
+import static java.nio.file.StandardOpenOption.READ;
 
 public class SSTable {
 
@@ -21,7 +21,7 @@ public class SSTable {
     private final File file;
     private final Long recordCount;
 
-    public SSTable(@NotNull File file) throws IOException {
+    public SSTable(@NotNull final File file) throws IOException {
         this.file = file;
         try (FileChannel fileChannel = (FileChannel) Files.newByteChannel(file.toPath(), READ)) {
             assertCondition(fileChannel.size() >= Long.BYTES);
@@ -72,7 +72,7 @@ public class SSTable {
         };
     }
 
-    private int getRemaining(int limit) {
+    private int getRemaining(final int limit) {
         return (int) (limit - Long.BYTES * (recordCount + 1));
     }
 
@@ -81,7 +81,7 @@ public class SSTable {
         final ByteBuffer record = getRecord(pos);
         final ByteBuffer key = getKey(record);
         final long timeStamp = getTimeStamp(record);
-        ByteBuffer value = timeStamp >= 0 ? getValue(record) : ByteBuffer.allocate(0);
+        final ByteBuffer value = timeStamp >= 0 ? getValue(record) : ByteBuffer.allocate(0);
 
         return new Item(key.duplicate(), value.duplicate(), timeStamp);
     }
@@ -89,7 +89,7 @@ public class SSTable {
     private ByteBuffer getRecord(final long index) {
         final int intIndex = (int) index;
         final long offset = offsets.get(intIndex);
-        long recordLimit = recordCount - index == 1 ? records.limit() : offsets.get(intIndex + 1);
+        final long recordLimit = recordCount - index == 1 ? records.limit() : offsets.get(intIndex + 1);
 
         return records.duplicate()
                 .position((int) offset)
@@ -137,7 +137,7 @@ public class SSTable {
         return left;
     }
 
-    private void assertCondition(boolean b) {
+    private void assertCondition(final boolean b) {
         if (!b) {
             throw new IllegalArgumentException();
         }
