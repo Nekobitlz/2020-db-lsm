@@ -26,12 +26,27 @@ public class SSTableUtils {
     private SSTableUtils() {
     }
 
+    /**
+     * Checks if the file name ends in VALID_FILE_EXTENSION
+     *
+     * @param path file path
+     * @return true, if the file name ends with VALID_FILE_EXTENSION
+     * false, if the file name not ends with VALID_FILE_EXTENSION
+     */
     public static boolean hasValidFileExtension(@NotNull final Path path) {
         return path.getFileName()
                 .toString()
                 .endsWith(VALID_FILE_EXTENSION);
     }
 
+    /**
+     * Writes new SSTable on disk
+     *
+     * @param items  iterator over the data to be written
+     * @param folder files directory
+     * @return path of new file
+     * @throws IOException if a write error has occurred
+     */
     @NotNull
     public static Path writeTableToDisk(@NotNull final Iterator<Item> items,
                                         @NotNull final File folder) throws IOException {

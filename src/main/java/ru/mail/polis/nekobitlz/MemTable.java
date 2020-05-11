@@ -22,6 +22,12 @@ public final class MemTable {
         bytesFlushThreshold = bytesHeapSize / 16;
     }
 
+    /**
+     * Returns an iterator over the elements in this table.
+     *
+     * @param from the key with which the iteration begins
+     * @return iterator
+     */
     @NotNull
     public Iterator<Item> iterator(@NotNull final ByteBuffer from) {
         return data.tailMap(from)
@@ -29,16 +35,34 @@ public final class MemTable {
                 .iterator();
     }
 
+    /**
+     * Inserts or updates an existing value in a table
+     *
+     * @param key   the key by which to insert the value
+     * @param value value to be inserted
+     */
     public void upsert(@NotNull final ByteBuffer key, @NotNull final ByteBuffer value) {
         final Item item = new Item(key.duplicate(), value.duplicate(), getCurrentNanoTime());
         calculateBytesSize(data.put(key, item), item);
     }
 
+    /**
+     * Removes the value for this key from this table, if it exists.
+     *
+     * @param key the key by which to remove the value
+     */
     public void remove(@NotNull final ByteBuffer key) {
         final Item item = new Item(key.duplicate(), ByteBuffer.allocate(0), -getCurrentNanoTime());
         calculateBytesSize(data.put(key, item), item);
     }
 
+    /**
+     * Moves the current MemTable to a file.
+     *
+     * @param folder destination directory
+     * @return the path of the new SSTable
+     * @throws IOException if a write error has occurred
+     */
     @NotNull
     public Path flush(final File folder) throws IOException {
         final Path path = SSTableUtils.writeTableToDisk(data.values().iterator(), folder);

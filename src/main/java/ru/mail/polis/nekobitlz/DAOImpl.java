@@ -27,6 +27,13 @@ public class DAOImpl implements DAO {
     private final List<SSTable> tables;
     private final Logger logger = LoggerFactory.getLogger(DAOImpl.class);
 
+    /**
+     * Constructs a new DAO based on LSM tree
+     *
+     * @param folder        folder to save data
+     * @param bytesHeapSize MemTable size threshold
+     * @throws IOException if a write error has occurred
+     */
     public DAOImpl(@NotNull final File folder, final long bytesHeapSize) throws IOException {
         memTable = new MemTable(bytesHeapSize);
         tables = new ArrayList<>();

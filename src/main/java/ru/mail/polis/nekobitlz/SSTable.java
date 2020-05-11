@@ -21,6 +21,12 @@ public class SSTable {
     private final File file;
     private final Long recordCount;
 
+    /**
+     * Creates Sorted Strings Table
+     *
+     * @param file target file
+     * @throws IOException if a write error has occurred
+     */
     public SSTable(@NotNull final File file) throws IOException {
         this.file = file;
         try (FileChannel fileChannel = (FileChannel) Files.newByteChannel(file.toPath(), READ)) {
@@ -54,6 +60,12 @@ public class SSTable {
         return file;
     }
 
+    /**
+     * Returns an iterator over the elements in this table.
+     *
+     * @param from the key with which the iteration begins
+     * @return iterator
+     */
     public Iterator<Item> getIterator(final ByteBuffer from) {
         return new Iterator<>() {
             long position = getPosition(from);
