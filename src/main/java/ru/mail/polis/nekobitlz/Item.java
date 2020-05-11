@@ -5,13 +5,13 @@ import java.util.Comparator;
 
 public class Item {
 
-    public static long additionalTime;
     public static final Comparator<Item> COMPARATOR = Comparator
             .comparing(Item::getKey)
             .thenComparing(Comparator
                     .comparing(Item::getTimeStampAbs)
                     .reversed()
             );
+    private static long additionalTime;
 
     private final ByteBuffer key;
     private final ByteBuffer value;

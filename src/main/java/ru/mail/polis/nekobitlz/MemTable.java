@@ -53,10 +53,6 @@ public final class MemTable {
     }
 
     private void calculateBytesSize(final Item previousItem, final Item item) {
-        if (previousItem == null) {
-            bytesSize += item.getBytesSize();
-        } else {
-            bytesSize += item.getBytesSize() - previousItem.getBytesSize();
-        }
+        bytesSize += previousItem == null ? item.getBytesSize() : item.getBytesSize() - previousItem.getBytesSize();
     }
 }

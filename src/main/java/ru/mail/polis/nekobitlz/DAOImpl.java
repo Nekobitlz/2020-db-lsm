@@ -33,8 +33,7 @@ public class DAOImpl implements DAO {
         this.folder = folder;
 
         try (Stream<Path> files = Files.list(folder.toPath())) {
-            files.filter(Files::isRegularFile)
-                    .filter(SSTableUtils::hasValidFileExtension)
+            files.filter(path -> Files.isRegularFile(path) && SSTableUtils.hasValidFileExtension(path))
                     .forEach(path -> createNewSSTable(path.toFile()));
         }
 
@@ -80,6 +79,12 @@ public class DAOImpl implements DAO {
         }
     }
 
+    private void flushTable() throws IOException {
+        final Path flushedFolder = memTable.flush(folder);
+        createNewSSTable(flushedFolder.toFile());
+        compactIfNeeded();
+    }
+
     private void compactIfNeeded() throws IOException {
         if (tables.size() > COMPACTION_THRESHOLD) {
             final Iterator<Item> itemIterator = createItemIterator(ByteBuffer.allocate(0));
@@ -109,11 +114,5 @@ public class DAOImpl implements DAO {
         final Iterator<Item> collapsedIterator = Iters.collapseEquals(mergedIterator, Item::getKey);
 
         return Iterators.filter(collapsedIterator, i -> !i.isRemoved());
-    }
-
-    private void flushTable() throws IOException {
-        final Path flushedFolder = memTable.flush(folder);
-        createNewSSTable(flushedFolder.toFile());
-        compactIfNeeded();
     }
 }
