@@ -31,11 +31,11 @@ public class DAOImpl implements DAO {
      * Constructs a new DAO based on LSM tree.
      *
      * @param folder        folder to save data
-     * @param bytesHeapSize MemTable size threshold
+     * @param bytesFlushThreshold MemTable size threshold
      * @throws IOException if a write error has occurred
      */
-    public DAOImpl(@NotNull final File folder, final long bytesHeapSize) throws IOException {
-        memTable = new MemTable(bytesHeapSize);
+    public DAOImpl(@NotNull final File folder, final long bytesFlushThreshold) throws IOException {
+        memTable = new MemTable(bytesFlushThreshold);
         tables = new ArrayList<>();
         this.folder = folder;
 

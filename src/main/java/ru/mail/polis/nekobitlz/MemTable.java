@@ -18,8 +18,8 @@ public final class MemTable {
     private final long bytesFlushThreshold;
     private long bytesSize;
 
-    public MemTable(final long bytesHeapSize) {
-        bytesFlushThreshold = bytesHeapSize / 16;
+    public MemTable(final long bytesFlushThreshold) {
+        this.bytesFlushThreshold = bytesFlushThreshold;
     }
 
     /**
