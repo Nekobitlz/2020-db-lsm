@@ -20,8 +20,6 @@ import java.util.stream.Stream;
 
 public class DAOImpl implements DAO {
 
-    private static final int COMPACTION_THRESHOLD = 16;
-
     private final MemTable memTable;
     private final File folder;
     private final List<SSTable> tables;
@@ -30,7 +28,7 @@ public class DAOImpl implements DAO {
     /**
      * Constructs a new DAO based on LSM tree.
      *
-     * @param folder        folder to save data
+     * @param folder              folder to save data
      * @param bytesFlushThreshold MemTable size threshold
      * @throws IOException if a write error has occurred
      */
@@ -43,8 +41,6 @@ public class DAOImpl implements DAO {
             files.filter(path -> Files.isRegularFile(path) && SSTableUtils.hasValidFileExtension(path))
                     .forEach(path -> createNewSSTable(path.toFile()));
         }
-
-        compactIfNeeded();
     }
 
     @NotNull
@@ -89,23 +85,6 @@ public class DAOImpl implements DAO {
     private void flushTable() throws IOException {
         final Path flushedFolder = memTable.flush(folder);
         createNewSSTable(flushedFolder.toFile());
-        compactIfNeeded();
-    }
-
-    private void compactIfNeeded() throws IOException {
-        if (tables.size() > COMPACTION_THRESHOLD) {
-            final Iterator<Item> itemIterator = createItemIterator(ByteBuffer.allocate(0));
-            final Path mergedTable = SSTableUtils.writeTableToDisk(itemIterator, folder);
-            tables.forEach(table -> {
-                try {
-                    Files.delete(table.getFile().toPath());
-                } catch (IOException e) {
-                    logger.error("Failed to delete file " + table.getFile().getName() + e.getMessage());
-                }
-            });
-            tables.clear();
-            createNewSSTable(mergedTable.toFile());
-        }
     }
 
     @NotNull
