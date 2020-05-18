@@ -71,6 +71,16 @@ public class DAOImpl implements DAO {
         memTable.flush(folder);
     }
 
+    @Override
+    public void compact() throws IOException {
+        final Iterator<Item> itemIterator = createItemIterator(ByteBuffer.allocate(0));
+        final File mergedTable = SSTableUtils.writeTableToDisk(itemIterator, folder).toFile();
+        for (int i = tables.size() - 1; i >= 0; i--) {
+            Files.delete(tables.remove(i).getFile().toPath());
+        }
+        createNewSSTable(mergedTable);
+    }
+
     private void createNewSSTable(final File file) {
         try {
             final SSTable table = new SSTable(file);
