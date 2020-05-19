@@ -42,10 +42,6 @@ public class DAOImpl implements DAO {
             files.filter(path -> Files.isRegularFile(path) && SSTableUtils.hasValidFileExtension(path))
                     .forEach(path -> createNewSSTable(path.toFile()));
         }
-
-        if (tables.size() > COMPACTION_THRESHOLD) {
-            compact();
-        }
     }
 
     @NotNull
