@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 
 public class DAOImpl implements DAO {
 
+    private static final int COMPACTION_THRESHOLD = 8;
     private final MemTable memTable;
     private final File folder;
     private final List<SSTable> tables;
@@ -40,6 +41,10 @@ public class DAOImpl implements DAO {
         try (Stream<Path> files = Files.list(folder.toPath())) {
             files.filter(path -> Files.isRegularFile(path) && SSTableUtils.hasValidFileExtension(path))
                     .forEach(path -> createNewSSTable(path.toFile()));
+        }
+
+        if (tables.size() > COMPACTION_THRESHOLD) {
+            compact();
         }
     }
 
@@ -95,6 +100,9 @@ public class DAOImpl implements DAO {
     private void flushTable() throws IOException {
         final Path flushedFolder = memTable.flush(folder);
         createNewSSTable(flushedFolder.toFile());
+        if (tables.size() > COMPACTION_THRESHOLD) {
+            compact();
+        }
     }
 
     @NotNull
