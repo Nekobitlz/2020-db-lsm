@@ -11,29 +11,29 @@ public class Coordinator {
     private final File folder;
     private final long bytesFlushThreshold;
 
-    public Coordinator(File folder, long bytesFlushThreshold) {
+    public Coordinator(final File folder, final long bytesFlushThreshold) {
         this.folder = folder;
         this.bytesFlushThreshold = bytesFlushThreshold;
     }
 
-    public void addTransaction(Transaction transaction) {
+    public void addTransaction(final Transaction transaction) {
         transactions.put(transaction.getTag(), transaction);
     }
 
-    public void removeTransaction(Transaction transaction) {
+    public void removeTransaction(final Transaction transaction) {
         transactions.remove(transaction.getTag());
     }
 
-    public void lockKey(String tag, ByteBuffer key) {
+    public void lockKey(final String tag, final ByteBuffer key) {
         lockedKeys.put(key, tag);
     }
 
-    public void unlockKey(ByteBuffer key) {
+    public void unlockKey(final ByteBuffer key) {
         lockedKeys.remove(key);
     }
 
-    public boolean isLockedByTag(String tag, ByteBuffer key) {
-        String lockedTag = lockedKeys.get(key);
+    public boolean isLockedByTag(final String tag, final ByteBuffer key) {
+        final String lockedTag = lockedKeys.get(key);
         if (lockedTag == null) {
             return false;
         }

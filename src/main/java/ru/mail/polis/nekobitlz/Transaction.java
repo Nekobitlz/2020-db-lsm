@@ -11,6 +11,7 @@ import ru.mail.polis.Record;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.*;
 
 public class Transaction implements Closeable {
@@ -24,7 +25,7 @@ public class Transaction implements Closeable {
     private final Coordinator coordinator;
     private boolean isClosed;
 
-    public Transaction(String tag, DAO dao, Coordinator coordinator) {
+    public Transaction(final String tag, final DAO dao, final Coordinator coordinator) {
         this.tag = tag;
         this.dao = dao;
         this.coordinator = coordinator;
@@ -63,21 +64,21 @@ public class Transaction implements Closeable {
         return Iterators.filter(collapsedIterator, i -> !i.getValue().equals(TOMBSTONE));
     }
 
-    public void upsert(@NotNull final ByteBuffer key, @NotNull final ByteBuffer value) {
+    public void upsert(@NotNull final ByteBuffer key, @NotNull final ByteBuffer value) throws IOException {
         assertClosed();
         assertKeyLocked(key);
         coordinator.lockKey(tag, key);
         changes.upsert(key, value);
     }
 
-    public void remove(@NotNull final ByteBuffer key) {
+    public void remove(@NotNull final ByteBuffer key) throws IOException {
         assertClosed();
         assertKeyLocked(key);
         coordinator.lockKey(tag, key);
         changes.upsert(key, TOMBSTONE);
     }
 
-    public ByteBuffer get(ByteBuffer key) throws IOException {
+    public ByteBuffer get(final ByteBuffer key) throws IOException {
         assertClosed();
         if (!changes.contains(key)) {
             return dao.get(key);
@@ -122,7 +123,7 @@ public class Transaction implements Closeable {
         isClosed = true;
     }
 
-    private void assertKeyLocked(ByteBuffer key) {
+    private void assertKeyLocked(final ByteBuffer key) {
         if (coordinator.isLockedByTag(tag, key)) {
             throw new ConcurrentModificationException("This key is already in use");
         }

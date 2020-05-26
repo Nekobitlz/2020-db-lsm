@@ -17,7 +17,7 @@ public class TransactionDAOImpl implements TransactionDAO {
     }
 
     @Override
-    public Transaction beginTransaction(String tag) {
+    public Transaction beginTransaction(final String tag) {
         if (coordinator.containsTransactionWithTag(tag)) {
             throw new IllegalArgumentException("Transaction with this tag already exists, please select a different tag");
         } else {
