@@ -12,6 +12,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.util.*;
 
 public class Transaction implements Closeable {
@@ -25,6 +26,13 @@ public class Transaction implements Closeable {
     private final Coordinator coordinator;
     private boolean isClosed;
 
+    /**
+     * Creates a new transaction
+     *
+     * @param tag transaction tag
+     * @param dao storage
+     * @param coordinator transaction management coordinator
+     */
     public Transaction(final String tag, final DAO dao, final Coordinator coordinator) {
         this.tag = tag;
         this.dao = dao;
@@ -32,10 +40,23 @@ public class Transaction implements Closeable {
         this.changes = new MemTable(coordinator.getBytesFlushThreshold());
     }
 
+    /**
+     * Returns an iterator over the elements in storage and transaction elements
+     *
+     * @param from the key with which the iteration begins
+     * @return iterator
+     * @throws IOException if a write error has occurred
+     */
     @NotNull
     public Iterator<Record> iterator(@NotNull final ByteBuffer from) throws IOException {
         assertClosed();
         final MemTable remaining = changes;
+        SSTable changesFile;
+        try {
+            changesFile = new SSTable(coordinator.getFolder(tag));
+        } catch (NoSuchFileException e) {
+            changesFile = null;
+        }
         final List<Iterator<Record>> iterators = new ArrayList<>();
         final Iterator<Record> newIterator = Iterators.transform(dao.iterator(from), i -> {
             ByteBuffer key = i.getKey();
@@ -52,6 +73,9 @@ public class Transaction implements Closeable {
             }
         });
         iterators.add(Iterators.transform(remaining.iterator(TOMBSTONE), i -> Record.of(i.getKey(), i.getValue())));
+        if (changesFile != null) {
+            iterators.add(Iterators.transform(changesFile.getIterator(TOMBSTONE), i -> Record.of(i.getKey(), i.getValue())));
+        }
         iterators.add(newIterator);
         final Iterator<Record> mergedIterator = Iterators.mergeSorted(iterators, Comparator
                 .comparing(Record::getKey)
@@ -64,6 +88,12 @@ public class Transaction implements Closeable {
         return Iterators.filter(collapsedIterator, i -> !i.getValue().equals(TOMBSTONE));
     }
 
+    /**
+     * Inserts or updates value by given key.
+     * @param key target key
+     * @param value target value
+     * @throws IOException if a flush error has occurred
+     */
     public void upsert(@NotNull final ByteBuffer key, @NotNull final ByteBuffer value) throws IOException {
         assertClosed();
         assertKeyLocked(key);
@@ -74,6 +104,12 @@ public class Transaction implements Closeable {
         }
     }
 
+    /**
+     * Removes value by given key.
+     *
+     * @param key target key
+     * @throws IOException if a flush error has occurred
+     */
     public void remove(@NotNull final ByteBuffer key) throws IOException {
         assertClosed();
         assertKeyLocked(key);
@@ -84,6 +120,14 @@ public class Transaction implements Closeable {
         }
     }
 
+    /**
+     * Return value by tag if it is exist
+     *
+     * @param key target key
+     * @return found value by tag
+     * @throws IOException if can’t get an iterator
+     * @throws NoSuchFileException if value not found
+     */
     public ByteBuffer get(final ByteBuffer key) throws IOException {
         assertClosed();
         if (!changes.contains(key)) {
@@ -95,6 +139,9 @@ public class Transaction implements Closeable {
         return changes.get(key);
     }
 
+    /**
+     * Applies transaction changes
+     */
     public void commit() {
         changes.iterator(TOMBSTONE).forEachRemaining((item) -> {
             try {
@@ -110,12 +157,20 @@ public class Transaction implements Closeable {
         close();
     }
 
-    public String getTag() {
-        return tag;
-    }
-
+    /**
+     * Cancels transaction changes
+     */
     public void abort() {
         close();
+    }
+
+    /**
+     * Returns transaction tag
+     *
+     * @return transaction tag
+     */
+    public String getTag() {
+        return tag;
     }
 
     @Override
