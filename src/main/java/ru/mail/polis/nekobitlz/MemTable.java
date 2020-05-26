@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -70,6 +71,30 @@ public final class MemTable {
         bytesSize = 0;
 
         return path;
+    }
+
+    @NotNull
+    public ByteBuffer get(@NotNull ByteBuffer key) throws IOException, NoSuchElementException {
+        final Iterator<Item> iter = iterator(key);
+        if (!iter.hasNext()) {
+            throw new NoSuchElementException("Not found");
+        }
+
+        final Item next = iter.next();
+        if (next.getKey().equals(key)) {
+            return next.getValue();
+        } else {
+            throw new NoSuchElementException("Not found");
+        }
+    }
+
+    public boolean contains(@NotNull ByteBuffer key) {
+        try {
+            get(key);
+            return true;
+        } catch (NoSuchElementException | IOException e) {
+            return false;
+        }
     }
 
     public boolean isFlushNeeded() {

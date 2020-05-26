@@ -16,9 +16,10 @@ import java.util.*;
 public class Transaction implements Closeable {
 
     private final Logger logger = LoggerFactory.getLogger(Transaction.class);
+    private static final ByteBuffer TOMBSTONE = ByteBuffer.allocate(0);
 
     private final String tag;
-    private final Map<ByteBuffer, ByteBuffer> changes = new HashMap<>();
+    private final MemTable changes;
     private final DAO dao;
     private final Coordinator coordinator;
     private boolean isClosed;
@@ -27,23 +28,29 @@ public class Transaction implements Closeable {
         this.tag = tag;
         this.dao = dao;
         this.coordinator = coordinator;
+        this.changes = new MemTable(coordinator.getBytesFlushThreshold());
     }
 
     @NotNull
     public Iterator<Record> iterator(@NotNull final ByteBuffer from) throws IOException {
         assertClosed();
-        final Map<ByteBuffer, ByteBuffer> remaining = changes;
+        final MemTable remaining = changes;
         final List<Iterator<Record>> iterators = new ArrayList<>();
         final Iterator<Record> newIterator = Iterators.transform(dao.iterator(from), i -> {
             ByteBuffer key = i.getKey();
-            if (changes.containsKey(key)) {
+            if (changes.contains(key)) {
                 remaining.remove(key);
-                return Record.of(key, changes.get(key));
+                try {
+                    return Record.of(key, changes.get(key));
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
+                    return null;
+                }
             } else {
                 return Record.of(i.getKey(), i.getValue());
             }
         });
-        iterators.add(Iterators.transform(remaining.entrySet().iterator(), i -> Record.of(i.getKey(), i.getValue())));
+        iterators.add(Iterators.transform(remaining.iterator(TOMBSTONE), i -> Record.of(i.getKey(), i.getValue())));
         iterators.add(newIterator);
         final Iterator<Record> mergedIterator = Iterators.mergeSorted(iterators, Comparator
                 .comparing(Record::getKey)
@@ -53,28 +60,28 @@ public class Transaction implements Closeable {
                 ));
         final Iterator<Record> collapsedIterator = Iters.collapseEquals(mergedIterator, Record::getKey);
 
-        return Iterators.filter(collapsedIterator, i -> !i.getValue().equals(ByteBuffer.allocate(0)));
+        return Iterators.filter(collapsedIterator, i -> !i.getValue().equals(TOMBSTONE));
     }
 
     public void upsert(@NotNull final ByteBuffer key, @NotNull final ByteBuffer value) {
         assertClosed();
         assertKeyLocked(key);
         coordinator.lockKey(tag, key);
-        changes.put(key, value);
+        changes.upsert(key, value);
     }
 
     public void remove(@NotNull final ByteBuffer key) {
         assertClosed();
         assertKeyLocked(key);
         coordinator.lockKey(tag, key);
-        changes.put(key, ByteBuffer.allocate(0));
+        changes.upsert(key, TOMBSTONE);
     }
 
     public ByteBuffer get(ByteBuffer key) throws IOException {
         assertClosed();
-        if (!changes.containsKey(key)) {
-           return dao.get(key);
-        } else if (changes.get(key).equals(ByteBuffer.allocate(0))) {
+        if (!changes.contains(key)) {
+            return dao.get(key);
+        } else if (changes.get(key).equals(TOMBSTONE)) {
             throw new NoSuchElementException();
         }
 
@@ -82,13 +89,12 @@ public class Transaction implements Closeable {
     }
 
     public void commit() {
-        assertClosed();
-        changes.forEach((key, value) -> {
+        changes.iterator(TOMBSTONE).forEachRemaining((item) -> {
             try {
-                if (value.equals(ByteBuffer.allocate(0))) {
-                    dao.remove(key);
+                if (item.getValue().equals(TOMBSTONE)) {
+                    dao.remove(item.getKey());
                 } else {
-                    dao.upsert(key, value);
+                    dao.upsert(item.getKey(), item.getValue());
                 }
             } catch (IOException e) {
                 logger.error(e.getMessage());
@@ -102,16 +108,17 @@ public class Transaction implements Closeable {
     }
 
     public void abort() {
-        assertClosed();
         close();
     }
 
     @Override
     public void close() {
-        assertClosed();
-        changes.forEach((key, value) -> coordinator.unlockKey(key));
-        changes.clear();
-        coordinator.removeTransaction(this);
+        changes.iterator(TOMBSTONE).forEachRemaining((item) -> coordinator.unlockKey(item.getKey()));
+        try {
+            changes.flush(coordinator.getFolder(tag));
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+        }
         isClosed = true;
     }
 

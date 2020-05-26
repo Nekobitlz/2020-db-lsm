@@ -8,11 +8,12 @@ import java.io.IOException;
 
 public class TransactionDAOImpl implements TransactionDAO {
 
-    private final Coordinator coordinator = new Coordinator();
+    private final Coordinator coordinator;
     private final DAO dao;
 
     public TransactionDAOImpl(@NotNull final File folder, final long bytesFlushThreshold) throws IOException {
         this.dao = new DAOImpl(folder, bytesFlushThreshold);
+        this.coordinator = new Coordinator(folder, bytesFlushThreshold);
     }
 
     @Override

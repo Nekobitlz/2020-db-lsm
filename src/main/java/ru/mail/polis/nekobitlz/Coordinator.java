@@ -1,5 +1,6 @@
 package ru.mail.polis.nekobitlz;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -7,6 +8,13 @@ public class Coordinator {
 
     private final Map<String, Transaction> transactions = new HashMap<>();
     private final Map<ByteBuffer, String> lockedKeys = new HashMap<>();
+    private final File folder;
+    private final long bytesFlushThreshold;
+
+    public Coordinator(File folder, long bytesFlushThreshold) {
+        this.folder = folder;
+        this.bytesFlushThreshold = bytesFlushThreshold;
+    }
 
     public void addTransaction(Transaction transaction) {
         transactions.put(transaction.getTag(), transaction);
@@ -42,5 +50,13 @@ public class Coordinator {
 
     public void abortTransactions() {
         transactions.forEach((key, value) -> value.abort());
+    }
+
+    public File getFolder(String tag) {
+        return new File(folder.getAbsolutePath() + tag);
+    }
+
+    public long getBytesFlushThreshold() {
+        return bytesFlushThreshold;
     }
 }
