@@ -257,6 +257,7 @@ public class TransactionTest extends TestBase {
                 assertEquals(expectedKey, actualKey);
                 assertEquals(expected.getValue(), actual.getValue());
             }
+            assertTrue(actualIter1.hasNext());
             while (expectedIter1.hasNext()) {
                 final Map.Entry<ByteBuffer, ByteBuffer> expected = expectedIter1.next();
                 final Record actual = actualIter1.next();
@@ -265,7 +266,7 @@ public class TransactionTest extends TestBase {
                 assertEquals(expectedKey, actualKey);
                 assertEquals(expected.getValue(), actual.getValue());
             }
-            assertFalse(actualIter.hasNext());
+            assertFalse(actualIter1.hasNext());
         }
     }
 }

@@ -69,6 +69,9 @@ public class Transaction implements Closeable {
         assertKeyLocked(key);
         coordinator.lockKey(tag, key);
         changes.upsert(key, value);
+        if (changes.isFlushNeeded()) {
+            changes.flush(coordinator.getFolder(tag));
+        }
     }
 
     public void remove(@NotNull final ByteBuffer key) throws IOException {
@@ -76,6 +79,9 @@ public class Transaction implements Closeable {
         assertKeyLocked(key);
         coordinator.lockKey(tag, key);
         changes.upsert(key, TOMBSTONE);
+        if (changes.isFlushNeeded()) {
+            changes.flush(coordinator.getFolder(tag));
+        }
     }
 
     public ByteBuffer get(final ByteBuffer key) throws IOException {
@@ -116,7 +122,7 @@ public class Transaction implements Closeable {
     public void close() {
         changes.iterator(TOMBSTONE).forEachRemaining((item) -> coordinator.unlockKey(item.getKey()));
         try {
-            changes.flush(coordinator.getFolder(tag));
+            Files.deleteIfExists(coordinator.getFolder(tag).toPath());
         } catch (IOException e) {
             logger.error(e.getMessage());
         }
