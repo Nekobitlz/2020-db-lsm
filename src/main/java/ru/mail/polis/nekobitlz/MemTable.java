@@ -74,7 +74,7 @@ public final class MemTable {
     }
 
     /**
-     * Returns value by target key
+     * Returns value by target key.
      * @param key target key
      * @return founded value
      * @throws NoSuchElementException if value not found
@@ -86,16 +86,18 @@ public final class MemTable {
             throw new NoSuchElementException("Not found");
         }
 
-        final Item next = iter.next();
-        if (next.getKey().equals(key)) {
-            return next.getValue();
-        } else {
-            throw new NoSuchElementException("Not found");
+        while (iter.hasNext()) {
+            final Item next = iter.next();
+            if (next.getKey().equals(key)) {
+                return next.getValue();
+            }
         }
+
+        throw new NoSuchElementException("Not found");
     }
 
     /**
-     * Checks if key contains in table
+     * Checks if key contains in table.
      * @param key target key
      */
     public boolean contains(@NotNull final ByteBuffer key) {

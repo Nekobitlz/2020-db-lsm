@@ -56,11 +56,9 @@ public class Transaction implements Closeable {
     public Iterator<Record> iterator(@NotNull final ByteBuffer from) throws IOException {
         assertClosed();
         final MemTable remaining = changes;
-        SSTable changesFile;
-        try {
+        SSTable changesFile = null;
+        if (Files.exists(coordinator.getFolder(tag).toPath())) {
             changesFile = new SSTable(coordinator.getFolder(tag));
-        } catch (NoSuchFileException e) {
-            changesFile = null;
         }
         final List<Iterator<Record>> iterators = new ArrayList<>();
         final Iterator<Record> newIterator = Iterators.transform(dao.iterator(from), i -> {
