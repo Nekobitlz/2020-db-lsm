@@ -13,12 +13,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.util.ConcurrentModificationException;
-import java.util.NoSuchElementException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class Transaction implements Closeable {
 
@@ -34,8 +34,8 @@ public class Transaction implements Closeable {
     /**
      * Creates a new transaction.
      *
-     * @param tag transaction tag
-     * @param dao storage
+     * @param tag         transaction tag
+     * @param dao         storage
      * @param coordinator transaction management coordinator
      */
     public Transaction(final String tag, final DAO dao, final Coordinator coordinator) {
@@ -92,7 +92,8 @@ public class Transaction implements Closeable {
 
     /**
      * Inserts or updates value by given key.
-     * @param key target key
+     *
+     * @param key   target key
      * @param value target value
      * @throws IOException if a flush error has occurred
      */
@@ -127,7 +128,7 @@ public class Transaction implements Closeable {
      *
      * @param key target key
      * @return found value by tag
-     * @throws IOException if can’t get an iterator
+     * @throws IOException         if can’t get an iterator
      * @throws NoSuchFileException if value not found
      */
     public ByteBuffer get(final ByteBuffer key) throws IOException {

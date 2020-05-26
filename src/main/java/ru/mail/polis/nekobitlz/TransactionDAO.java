@@ -15,7 +15,7 @@ public interface TransactionDAO extends Closeable {
     Transaction beginTransaction(String tag);
 
     /**
-     * Applies all transaction changes,
+     * Applies all transaction changes.
      */
     void commit();
 

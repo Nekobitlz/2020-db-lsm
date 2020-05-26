@@ -73,6 +73,12 @@ public final class MemTable {
         return path;
     }
 
+    /**
+     * Returns value by target key
+     * @param key target key
+     * @return founded value
+     * @throws NoSuchElementException if value not found
+     */
     @NotNull
     public ByteBuffer get(@NotNull final ByteBuffer key) throws NoSuchElementException {
         final Iterator<Item> iter = iterator(key);
@@ -88,6 +94,10 @@ public final class MemTable {
         }
     }
 
+    /**
+     * Checks if key contains in table
+     * @param key target key
+     */
     public boolean contains(@NotNull final ByteBuffer key) {
         try {
             get(key);
