@@ -74,7 +74,7 @@ public final class MemTable {
     }
 
     @NotNull
-    public ByteBuffer get(@NotNull ByteBuffer key) throws IOException, NoSuchElementException {
+    public ByteBuffer get(@NotNull final ByteBuffer key) throws NoSuchElementException {
         final Iterator<Item> iter = iterator(key);
         if (!iter.hasNext()) {
             throw new NoSuchElementException("Not found");
@@ -88,11 +88,11 @@ public final class MemTable {
         }
     }
 
-    public boolean contains(@NotNull ByteBuffer key) {
+    public boolean contains(@NotNull final ByteBuffer key) {
         try {
             get(key);
             return true;
-        } catch (NoSuchElementException | IOException e) {
+        } catch (NoSuchElementException e) {
             return false;
         }
     }

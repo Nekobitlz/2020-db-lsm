@@ -13,7 +13,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.util.*;
+import java.util.ConcurrentModificationException;
+import java.util.NoSuchElementException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 
 public class Transaction implements Closeable {
 
@@ -27,7 +32,7 @@ public class Transaction implements Closeable {
     private boolean isClosed;
 
     /**
-     * Creates a new transaction
+     * Creates a new transaction.
      *
      * @param tag transaction tag
      * @param dao storage
@@ -41,7 +46,7 @@ public class Transaction implements Closeable {
     }
 
     /**
-     * Returns an iterator over the elements in storage and transaction elements
+     * Returns an iterator over the elements in storage and transaction elements.
      *
      * @param from the key with which the iteration begins
      * @return iterator
@@ -62,19 +67,16 @@ public class Transaction implements Closeable {
             ByteBuffer key = i.getKey();
             if (changes.contains(key)) {
                 remaining.remove(key);
-                try {
-                    return Record.of(key, changes.get(key));
-                } catch (IOException e) {
-                    logger.error(e.getMessage());
-                    return null;
-                }
+                return Record.of(key, changes.get(key));
             } else {
                 return Record.of(i.getKey(), i.getValue());
             }
         });
         iterators.add(Iterators.transform(remaining.iterator(TOMBSTONE), i -> Record.of(i.getKey(), i.getValue())));
         if (changesFile != null) {
-            iterators.add(Iterators.transform(changesFile.getIterator(TOMBSTONE), i -> Record.of(i.getKey(), i.getValue())));
+            iterators.add(Iterators.transform(
+                    changesFile.getIterator(TOMBSTONE), i -> Record.of(i.getKey(), i.getValue()))
+            );
         }
         iterators.add(newIterator);
         final Iterator<Record> mergedIterator = Iterators.mergeSorted(iterators, Comparator
@@ -121,7 +123,7 @@ public class Transaction implements Closeable {
     }
 
     /**
-     * Return value by tag if it is exist
+     * Return value by tag if it is exist.
      *
      * @param key target key
      * @return found value by tag
@@ -130,17 +132,19 @@ public class Transaction implements Closeable {
      */
     public ByteBuffer get(final ByteBuffer key) throws IOException {
         assertClosed();
-        if (!changes.contains(key)) {
+        if (changes.contains(key)) {
+            if (changes.get(key).equals(TOMBSTONE)) {
+                throw new NoSuchElementException();
+            }
+        } else {
             return dao.get(key);
-        } else if (changes.get(key).equals(TOMBSTONE)) {
-            throw new NoSuchElementException();
         }
 
         return changes.get(key);
     }
 
     /**
-     * Applies transaction changes
+     * Applies transaction changes.
      */
     public void commit() {
         changes.iterator(TOMBSTONE).forEachRemaining((item) -> {
@@ -158,14 +162,14 @@ public class Transaction implements Closeable {
     }
 
     /**
-     * Cancels transaction changes
+     * Cancels transaction changes.
      */
     public void abort() {
         close();
     }
 
     /**
-     * Returns transaction tag
+     * Returns transaction tag.
      *
      * @return transaction tag
      */
@@ -192,7 +196,9 @@ public class Transaction implements Closeable {
 
     private void assertClosed() {
         if (isClosed) {
-            throw new IllegalStateException("This transaction is already closed, you need to open a new one in order to perform operations");
+            throw new IllegalStateException(
+                    "This transaction is already closed, you need to open a new one in order to perform operations"
+            );
         }
     }
 }

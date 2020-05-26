@@ -2,7 +2,8 @@ package ru.mail.polis.nekobitlz;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Coordinator {
 
@@ -12,7 +13,7 @@ public class Coordinator {
     private final long bytesFlushThreshold;
 
     /**
-     * Creates a coordinator for transaction management
+     * Creates a coordinator for transaction management.
      *
      * @param folder folder where can store temporary files
      * @param bytesFlushThreshold MemTable size threshold
@@ -23,7 +24,7 @@ public class Coordinator {
     }
 
     /**
-     * Adds transaction to transaction list
+     * Adds transaction to transaction list.
      * @param transaction target transaction
      */
     public void addTransaction(final Transaction transaction) {
@@ -31,7 +32,7 @@ public class Coordinator {
     }
 
     /**
-     * Removes transaction from transaction list
+     * Removes transaction from transaction list.
      * @param transaction target transaction
      */
     public void removeTransaction(final Transaction transaction) {
@@ -39,7 +40,7 @@ public class Coordinator {
     }
 
     /**
-     * Locks key by transaction tag
+     * Locks key by transaction tag.
      * @param tag transaction tag
      * @param key target key
      */
@@ -48,7 +49,7 @@ public class Coordinator {
     }
 
     /**
-     * Unlocks key by transaction tag
+     * Unlocks key by transaction tag.
      * @param key target key
      */
     public void unlockKey(final ByteBuffer key) {
@@ -56,7 +57,7 @@ public class Coordinator {
     }
 
     /**
-     * Checks if the key is locked for this tag
+     * Checks if the key is locked for this tag.
      *
      * @param key target key
      * @param tag transaction tag to verify
@@ -74,12 +75,12 @@ public class Coordinator {
      *
      * @param tag target tag
      */
-    public boolean containsTransactionWithTag(String tag) {
+    public boolean containsTransactionWithTag(final String tag) {
         return transactions.containsKey(tag);
     }
 
     /**
-     * Commits all transactions from transaction list
+     * Commits all transactions from transaction list.
      */
     public void commitTransactions() {
         transactions.forEach((key, value) -> value.commit());
@@ -87,7 +88,7 @@ public class Coordinator {
     }
 
     /**
-     * Cancels all transactions from transaction list
+     * Cancels all transactions from transaction list.
      */
     public void abortTransactions() {
         transactions.forEach((key, value) -> value.abort());
@@ -95,16 +96,16 @@ public class Coordinator {
     }
 
     /**
-     * Returns folder where can store temporary files
+     * Returns folder where can store temporary files.
      * @param tag target tag
      * @return folder
      */
-    public File getFolder(String tag) {
+    public File getFolder(final String tag) {
         return new File(folder.getAbsolutePath() + tag);
     }
 
     /**
-     * Returns MemTable size threshold
+     * Returns MemTable size threshold.
      * @return bytesFlushThreshold
      */
     public long getBytesFlushThreshold() {
