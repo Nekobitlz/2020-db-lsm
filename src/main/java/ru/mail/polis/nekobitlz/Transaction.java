@@ -124,8 +124,13 @@ public class Transaction implements DAO {
      *
      * @param key target key
      */
-    public boolean doesKeyChange(@NotNull ByteBuffer key) throws IOException {
-        return changes.contains(key);
+    public boolean doesKeyChange(@NotNull final ByteBuffer key) {
+        try {
+            return changes.contains(key);
+        } catch (IOException e) {
+            logger.error("Failed to check if key is contained", e);
+            return false;
+        }
     }
 
     /**

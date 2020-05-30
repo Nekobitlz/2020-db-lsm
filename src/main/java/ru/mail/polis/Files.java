@@ -36,6 +36,10 @@ public final class Files {
         // Don't instantiate
     }
 
+    /**
+     * Recursively deletes all files in a folder
+     * @param path target folder
+     */
     public static void recursiveDelete(@NotNull final File path) throws IOException {
         java.nio.file.Files.walkFileTree(
                 path.toPath(),
