@@ -80,7 +80,6 @@ public class Transaction implements DAO {
     public void upsert(@NotNull final ByteBuffer key, @NotNull final ByteBuffer value) throws IOException {
         assertClosed();
         assertKeyLocked(key);
-        coordinator.lockKey(tag, key);
         changes.upsert(key, value);
     }
 
@@ -94,7 +93,6 @@ public class Transaction implements DAO {
     public void remove(@NotNull final ByteBuffer key) throws IOException {
         assertClosed();
         assertKeyLocked(key);
-        coordinator.lockKey(tag, key);
         changes.upsert(key, TOMBSTONE);
     }
 
@@ -119,6 +117,15 @@ public class Transaction implements DAO {
         }
 
         return changes.get(key);
+    }
+
+    /**
+     * Checks if the key is being changed in this transaction.
+     *
+     * @param key target key
+     */
+    public boolean doesKeyChange(@NotNull ByteBuffer key) throws IOException {
+        return changes.contains(key);
     }
 
     /**
@@ -159,11 +166,6 @@ public class Transaction implements DAO {
 
     @Override
     public void close() {
-        try {
-            changes.iterator(TOMBSTONE).forEachRemaining((item) -> coordinator.unlockKey(item.getKey()));
-        } catch (IOException e) {
-            logger.error("Failed to unlock transaction keys", e);
-        }
         try {
             Files.recursiveDelete(coordinator.getFolder(tag));
         } catch (IOException e) {

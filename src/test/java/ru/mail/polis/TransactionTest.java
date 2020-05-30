@@ -93,19 +93,15 @@ public class TransactionTest extends TestBase {
     }
 
     @Test
-    void twoOperations(@TempDir File data) throws IOException {
+    void testTwoSimultaneousOperations(@TempDir File data) throws IOException {
         // Reference value
         final int valueSize = 1024 * 1024;
         final int keyCount = 10;
 
         final ByteBuffer value = randomBuffer(valueSize);
         final Collection<ByteBuffer> keys = new ArrayList<>(keyCount);
-        final Collection<ByteBuffer> keys1 = new ArrayList<>(keyCount);
         for (int i = 0; i < keyCount; i++) {
             keys.add(randomKey());
-        }
-        for (int i = 0; i < keyCount; i++) {
-            keys1.add(randomKey());
         }
 
         try (TransactionDAO transactionDAO = new TransactionDAOImpl(data, 1024 * 1024 * 16)) {

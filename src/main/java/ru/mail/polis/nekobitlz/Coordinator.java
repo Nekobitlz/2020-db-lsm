@@ -1,6 +1,7 @@
 package ru.mail.polis.nekobitlz;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -8,7 +9,6 @@ import java.util.Map;
 public class Coordinator {
 
     private final Map<String, Transaction> transactions = new HashMap<>();
-    private final Map<ByteBuffer, String> lockedKeys = new HashMap<>();
     private final File folder;
     private final long bytesFlushThreshold;
 
@@ -40,34 +40,24 @@ public class Coordinator {
     }
 
     /**
-     * Locks key by transaction tag.
-     * @param tag transaction tag
-     * @param key target key
-     */
-    public void lockKey(final String tag, final ByteBuffer key) {
-        lockedKeys.put(key, tag);
-    }
-
-    /**
-     * Unlocks key by transaction tag.
-     * @param key target key
-     */
-    public void unlockKey(final ByteBuffer key) {
-        lockedKeys.remove(key);
-    }
-
-    /**
      * Checks if the key is locked for this tag.
      *
      * @param key target key
      * @param tag transaction tag to verify
      */
     public boolean isLockedByAnotherTag(final String tag, final ByteBuffer key) {
-        final String lockedTag = lockedKeys.get(key);
-        if (lockedTag == null) {
-            return false;
+        for (Map.Entry<String, Transaction> entry : transactions.entrySet()) {
+            String transactionTag = entry.getKey();
+            Transaction transaction = entry.getValue();
+            try {
+                if (!transactionTag.equals(tag) && transaction.doesKeyChange(key)) {
+                    return true;
+                }
+            } catch (IOException ignored) {
+            }
         }
-        return !lockedTag.equals(tag);
+
+        return false;
     }
 
     /**

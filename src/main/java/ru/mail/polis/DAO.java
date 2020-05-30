@@ -84,6 +84,9 @@ public interface DAO extends Closeable {
         }
     }
 
+    /**
+     * Checks if a key is contained in a DAO
+     */
     default boolean contains(@NotNull final ByteBuffer key) throws IOException {
         try {
             get(key);
