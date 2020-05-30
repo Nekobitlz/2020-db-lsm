@@ -5,13 +5,12 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.mail.polis.DAO;
+import ru.mail.polis.Files;
 import ru.mail.polis.Iters;
 import ru.mail.polis.Record;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -20,13 +19,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-public class Transaction implements Closeable {
+public class Transaction implements DAO {
 
     private final Logger logger = LoggerFactory.getLogger(Transaction.class);
     private static final ByteBuffer TOMBSTONE = ByteBuffer.allocate(0);
 
     private final String tag;
-    private final MemTable changes;
+    private final DAO changes;
     private final DAO dao;
     private final Coordinator coordinator;
     private boolean isClosed;
@@ -38,11 +37,11 @@ public class Transaction implements Closeable {
      * @param dao         storage
      * @param coordinator transaction management coordinator
      */
-    public Transaction(final String tag, final DAO dao, final Coordinator coordinator) {
+    public Transaction(final String tag, final DAO dao, final Coordinator coordinator) throws IOException {
         this.tag = tag;
         this.dao = dao;
         this.coordinator = coordinator;
-        this.changes = new MemTable(coordinator.getBytesFlushThreshold());
+        this.changes = new DAOImpl(coordinator.getFolder(tag), coordinator.getBytesFlushThreshold());
     }
 
     /**
@@ -53,30 +52,12 @@ public class Transaction implements Closeable {
      * @throws IOException if a write error has occurred
      */
     @NotNull
+    @Override
     public Iterator<Record> iterator(@NotNull final ByteBuffer from) throws IOException {
         assertClosed();
-        final MemTable remaining = changes;
-        SSTable changesFile = null;
-        if (Files.exists(coordinator.getFolder(tag).toPath())) {
-            changesFile = new SSTable(coordinator.getFolder(tag));
-        }
         final List<Iterator<Record>> iterators = new ArrayList<>();
-        final Iterator<Record> newIterator = Iterators.transform(dao.iterator(from), i -> {
-            ByteBuffer key = i.getKey();
-            if (changes.contains(key)) {
-                remaining.remove(key);
-                return Record.of(key, changes.get(key));
-            } else {
-                return Record.of(i.getKey(), i.getValue());
-            }
-        });
-        iterators.add(Iterators.transform(remaining.iterator(TOMBSTONE), i -> Record.of(i.getKey(), i.getValue())));
-        if (changesFile != null) {
-            iterators.add(Iterators.transform(
-                    changesFile.getIterator(TOMBSTONE), i -> Record.of(i.getKey(), i.getValue()))
-            );
-        }
-        iterators.add(newIterator);
+        iterators.add(changes.iterator(from));
+        iterators.add(dao.iterator(from));
         final Iterator<Record> mergedIterator = Iterators.mergeSorted(iterators, Comparator
                 .comparing(Record::getKey)
                 .thenComparing(Comparator
@@ -95,14 +76,12 @@ public class Transaction implements Closeable {
      * @param value target value
      * @throws IOException if a flush error has occurred
      */
+    @Override
     public void upsert(@NotNull final ByteBuffer key, @NotNull final ByteBuffer value) throws IOException {
         assertClosed();
         assertKeyLocked(key);
         coordinator.lockKey(tag, key);
         changes.upsert(key, value);
-        if (changes.isFlushNeeded()) {
-            changes.flush(coordinator.getFolder(tag));
-        }
     }
 
     /**
@@ -111,14 +90,12 @@ public class Transaction implements Closeable {
      * @param key target key
      * @throws IOException if a flush error has occurred
      */
+    @Override
     public void remove(@NotNull final ByteBuffer key) throws IOException {
         assertClosed();
         assertKeyLocked(key);
         coordinator.lockKey(tag, key);
         changes.upsert(key, TOMBSTONE);
-        if (changes.isFlushNeeded()) {
-            changes.flush(coordinator.getFolder(tag));
-        }
     }
 
     /**
@@ -129,7 +106,9 @@ public class Transaction implements Closeable {
      * @throws IOException         if can’t get an iterator
      * @throws NoSuchFileException if value not found
      */
-    public ByteBuffer get(final ByteBuffer key) throws IOException {
+    @NotNull
+    @Override
+    public ByteBuffer get(@NotNull final ByteBuffer key) throws IOException {
         assertClosed();
         if (changes.contains(key)) {
             if (changes.get(key).equals(TOMBSTONE)) {
@@ -145,7 +124,7 @@ public class Transaction implements Closeable {
     /**
      * Applies transaction changes.
      */
-    public void commit() {
+    public void commit() throws IOException {
         changes.iterator(TOMBSTONE).forEachRemaining((item) -> {
             try {
                 if (item.getValue().equals(TOMBSTONE)) {
@@ -154,9 +133,10 @@ public class Transaction implements Closeable {
                     dao.upsert(item.getKey(), item.getValue());
                 }
             } catch (IOException e) {
-                logger.error(e.getMessage());
+                logger.error("Failed to commit " + item, e);
             }
         });
+        coordinator.removeTransaction(this);
         close();
     }
 
@@ -164,6 +144,7 @@ public class Transaction implements Closeable {
      * Cancels transaction changes.
      */
     public void abort() {
+        coordinator.removeTransaction(this);
         close();
     }
 
@@ -178,18 +159,21 @@ public class Transaction implements Closeable {
 
     @Override
     public void close() {
-        changes.iterator(TOMBSTONE).forEachRemaining((item) -> coordinator.unlockKey(item.getKey()));
-        coordinator.removeTransaction(this);
         try {
-            Files.deleteIfExists(coordinator.getFolder(tag).toPath());
+            changes.iterator(TOMBSTONE).forEachRemaining((item) -> coordinator.unlockKey(item.getKey()));
         } catch (IOException e) {
-            logger.error(e.getMessage());
+            logger.error("Failed to unlock transaction keys", e);
+        }
+        try {
+            Files.recursiveDelete(coordinator.getFolder(tag));
+        } catch (IOException e) {
+            logger.error("Failed to delete", e);
         }
         isClosed = true;
     }
 
     private void assertKeyLocked(final ByteBuffer key) {
-        if (coordinator.isLockedByTag(tag, key)) {
+        if (coordinator.isLockedByAnotherTag(tag, key)) {
             throw new ConcurrentModificationException("This key is already in use");
         }
     }

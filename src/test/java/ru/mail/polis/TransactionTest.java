@@ -157,7 +157,7 @@ public class TransactionTest extends TestBase {
     }
 
     @Test
-    void fullScan(@TempDir File data) throws IOException {
+    void testIterator(@TempDir File data) throws IOException {
         try (TransactionDAO transactionDAO = new TransactionDAOImpl(data, 1024 * 1024 * 16)) {
             // Generate and insert data
             final int count = 10;
@@ -214,6 +214,36 @@ public class TransactionTest extends TestBase {
                 assertEquals(expected.getValue(), actual.getValue());
             }
             assertFalse(actualIter1.hasNext());
+        }
+    }
+
+    @Test
+    void testIteratorWithFlush(@TempDir File data) throws IOException {
+        try (TransactionDAO transactionDAO = new TransactionDAOImpl(data, 16)) {
+            // Generate and insert data
+            final int count = 10;
+            final NavigableMap<ByteBuffer, ByteBuffer> map = new TreeMap<>();
+            Transaction transaction1 = transactionDAO.beginTransaction("test");
+            for (int i = 0; i < count; i++) {
+                final ByteBuffer key = randomKey();
+                final ByteBuffer value = randomValue();
+                transaction1.upsert(key, value);
+                assertNull(map.put(key, value));
+            }
+
+            // Check the data
+            final Iterator<Map.Entry<ByteBuffer, ByteBuffer>> expectedIter = map.entrySet().iterator();
+            final Iterator<Record> actualIter = transaction1.iterator(ByteBuffer.wrap(new byte[0]));
+            while (expectedIter.hasNext()) {
+                final Map.Entry<ByteBuffer, ByteBuffer> expected = expectedIter.next();
+                final Record actual = actualIter.next();
+                final ByteBuffer expectedKey = expected.getKey();
+                final ByteBuffer actualKey = actual.getKey();
+                assertEquals(expectedKey, actualKey);
+                assertEquals(expected.getValue(), actual.getValue());
+            }
+            assertFalse(actualIter.hasNext());
+            transaction1.commit();
         }
     }
 }

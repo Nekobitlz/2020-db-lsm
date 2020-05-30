@@ -62,7 +62,7 @@ public class Coordinator {
      * @param key target key
      * @param tag transaction tag to verify
      */
-    public boolean isLockedByTag(final String tag, final ByteBuffer key) {
+    public boolean isLockedByAnotherTag(final String tag, final ByteBuffer key) {
         final String lockedTag = lockedKeys.get(key);
         if (lockedTag == null) {
             return false;
@@ -85,7 +85,11 @@ public class Coordinator {
      * @return folder
      */
     public File getFolder(final String tag) {
-        return new File(folder.getAbsolutePath() + tag);
+        File newFolder = new File(folder.getAbsolutePath() + File.separator + tag);
+        if (!newFolder.exists()) {
+            newFolder.mkdirs();
+        }
+        return newFolder;
     }
 
     /**
@@ -94,5 +98,10 @@ public class Coordinator {
      */
     public long getBytesFlushThreshold() {
         return bytesFlushThreshold;
+    }
+
+    public void close() {
+        transactions.forEach((key, value) -> value.close());
+        transactions.clear();
     }
 }

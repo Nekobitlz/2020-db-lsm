@@ -84,6 +84,15 @@ public interface DAO extends Closeable {
         }
     }
 
+    default boolean contains(@NotNull final ByteBuffer key) throws IOException {
+        try {
+            get(key);
+            return true;
+        } catch (NoSuchElementException e) {
+            return false;
+        }
+    }
+
     /**
      * Inserts or updates value by given key.
      */
