@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 public class TransactionTest extends TestBase {
 
     @Test
-    void simpleOperations(@TempDir File data) throws IOException {
+    void testUpsertRemoveCommit(@TempDir File data) throws IOException {
         // Reference value
         final int valueSize = 1024 * 1024;
         final int keyCount = 10;
@@ -31,31 +31,48 @@ public class TransactionTest extends TestBase {
         try (TransactionDAO transactionDAO = new TransactionDAOImpl(data, 1024 * 1024 * 16)) {
             DAO dao = transactionDAO.getStorage();
 
-            Transaction transaction = transactionDAO.beginTransaction("test");
+            Transaction transaction1 = transactionDAO.beginTransaction("test");
             for (final ByteBuffer key : keys) {
-                transaction.upsert(key, join(key, value));
+                transaction1.upsert(key, join(key, value));
             }
             for (final ByteBuffer key : keys) {
-                assertEquals(join(key, value), transaction.get(key));
+                assertEquals(join(key, value), transaction1.get(key));
                 assertThrows(NoSuchElementException.class, () -> dao.get(key));
             }
-            transaction.commit();
+            transaction1.commit();
             for (final ByteBuffer key : keys) {
                 assertEquals(join(key, value), dao.get(key));
             }
 
-            Transaction transaction1 = transactionDAO.beginTransaction("test1");
+            Transaction transaction2 = transactionDAO.beginTransaction("test1");
             for (final ByteBuffer key : keys) {
-                transaction1.remove(key);
+                transaction2.remove(key);
             }
             for (final ByteBuffer key : keys) {
-                assertThrows(NoSuchElementException.class, () -> transaction1.get(key));
+                assertThrows(NoSuchElementException.class, () -> transaction2.get(key));
                 assertEquals(join(key, value), dao.get(key));
             }
-            transaction1.commit();
+            transaction2.commit();
             for (final ByteBuffer key : keys) {
                 assertThrows(NoSuchElementException.class, () -> dao.get(key));
             }
+        }
+    }
+
+    @Test
+    void testAbort(@TempDir File data) throws IOException {
+        // Reference value
+        final int valueSize = 1024 * 1024;
+        final int keyCount = 10;
+
+        final ByteBuffer value = randomBuffer(valueSize);
+        final Collection<ByteBuffer> keys = new ArrayList<>(keyCount);
+        for (int i = 0; i < keyCount; i++) {
+            keys.add(randomKey());
+        }
+
+        try (TransactionDAO transactionDAO = new TransactionDAOImpl(data, 1024 * 1024 * 16)) {
+            DAO dao = transactionDAO.getStorage();
 
             Transaction transaction2 = transactionDAO.beginTransaction("test2");
             for (final ByteBuffer key : keys) {
@@ -93,45 +110,45 @@ public class TransactionTest extends TestBase {
 
         try (TransactionDAO transactionDAO = new TransactionDAOImpl(data, 1024 * 1024 * 16)) {
             DAO dao = transactionDAO.getStorage();
-            Transaction transaction = transactionDAO.beginTransaction("test");
-            Transaction transaction1 = transactionDAO.beginTransaction("test1");
-
-            for (final ByteBuffer key : keys) {
-                transaction.upsert(key, join(key, value));
-            }
-            for (final ByteBuffer key : keys) {
-                assertEquals(join(key, value), transaction.get(key));
-                assertThrows(ConcurrentModificationException.class, () -> transaction1.upsert(key, join(key, value)));
-            }
-            transaction.abort();
+            Transaction transaction1 = transactionDAO.beginTransaction("test");
+            Transaction transaction2 = transactionDAO.beginTransaction("test1");
 
             for (final ByteBuffer key : keys) {
                 transaction1.upsert(key, join(key, value));
-                assertEquals(join(key, value), transaction1.get(key));
             }
-            transaction1.commit();
+            for (final ByteBuffer key : keys) {
+                assertEquals(join(key, value), transaction1.get(key));
+                assertThrows(ConcurrentModificationException.class, () -> transaction2.upsert(key, join(key, value)));
+            }
+            transaction1.abort();
+
+            for (final ByteBuffer key : keys) {
+                transaction2.upsert(key, join(key, value));
+                assertEquals(join(key, value), transaction2.get(key));
+            }
+            transaction2.commit();
 
             for (final ByteBuffer key : keys) {
                 assertEquals(join(key, value), dao.get(key));
             }
 
-            Transaction transaction2 = transactionDAO.beginTransaction("test2");
-            Transaction transaction3 = transactionDAO.beginTransaction("test3");
-
-            for (final ByteBuffer key : keys) {
-                transaction2.remove(key);
-            }
-            for (final ByteBuffer key : keys) {
-                assertThrows(NoSuchElementException.class, () -> transaction2.get(key));
-                assertThrows(ConcurrentModificationException.class, () -> transaction3.remove(key));
-            }
-            transaction2.abort();
+            Transaction transaction3 = transactionDAO.beginTransaction("test2");
+            Transaction transaction4 = transactionDAO.beginTransaction("test3");
 
             for (final ByteBuffer key : keys) {
                 transaction3.remove(key);
-                assertThrows(NoSuchElementException.class, () -> transaction3.get(key));
             }
-            transaction3.commit();
+            for (final ByteBuffer key : keys) {
+                assertThrows(NoSuchElementException.class, () -> transaction3.get(key));
+                assertThrows(ConcurrentModificationException.class, () -> transaction4.remove(key));
+            }
+            transaction3.abort();
+
+            for (final ByteBuffer key : keys) {
+                transaction4.remove(key);
+                assertThrows(NoSuchElementException.class, () -> transaction4.get(key));
+            }
+            transaction4.commit();
 
             for (final ByteBuffer key : keys) {
                 assertThrows(NoSuchElementException.class, () -> dao.get(key));
@@ -145,17 +162,17 @@ public class TransactionTest extends TestBase {
             // Generate and insert data
             final int count = 10;
             final NavigableMap<ByteBuffer, ByteBuffer> map = new TreeMap<>();
-            Transaction transaction = transactionDAO.beginTransaction("test");
+            Transaction transaction1 = transactionDAO.beginTransaction("test");
             for (int i = 0; i < count; i++) {
                 final ByteBuffer key = randomKey();
                 final ByteBuffer value = randomValue();
-                transaction.upsert(key, value);
+                transaction1.upsert(key, value);
                 assertNull(map.put(key, value));
             }
 
             // Check the data
             final Iterator<Map.Entry<ByteBuffer, ByteBuffer>> expectedIter = map.entrySet().iterator();
-            final Iterator<Record> actualIter = transaction.iterator(ByteBuffer.wrap(new byte[0]));
+            final Iterator<Record> actualIter = transaction1.iterator(ByteBuffer.wrap(new byte[0]));
             while (expectedIter.hasNext()) {
                 final Map.Entry<ByteBuffer, ByteBuffer> expected = expectedIter.next();
                 final Record actual = actualIter.next();
@@ -165,20 +182,20 @@ public class TransactionTest extends TestBase {
                 assertEquals(expected.getValue(), actual.getValue());
             }
             assertFalse(actualIter.hasNext());
-            transaction.commit();
+            transaction1.commit();
 
             // Generate and insert data
-            Transaction transaction1 = transactionDAO.beginTransaction("test1");
+            Transaction transaction2 = transactionDAO.beginTransaction("test1");
             for (int i = 0; i < count; i++) {
                 final ByteBuffer key = randomKey();
                 final ByteBuffer value = randomValue();
-                transaction1.upsert(key, value);
+                transaction2.upsert(key, value);
                 assertNull(map.put(key, value));
             }
 
             // Check the data
             final Iterator<Map.Entry<ByteBuffer, ByteBuffer>> expectedIter1 = map.entrySet().iterator();
-            final Iterator<Record> actualIter1 = transaction1.iterator(ByteBuffer.wrap(new byte[0]));
+            final Iterator<Record> actualIter1 = transaction2.iterator(ByteBuffer.wrap(new byte[0]));
             while (expectedIter.hasNext()) {
                 final Map.Entry<ByteBuffer, ByteBuffer> expected = expectedIter.next();
                 final Record actual = actualIter1.next();
