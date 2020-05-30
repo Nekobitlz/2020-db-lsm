@@ -37,7 +37,8 @@ public final class Files {
     }
 
     /**
-     * Recursively deletes all files in a folder
+     * Recursively deletes all files in a folder.
+     *
      * @param path target folder
      */
     public static void recursiveDelete(@NotNull final File path) throws IOException {
