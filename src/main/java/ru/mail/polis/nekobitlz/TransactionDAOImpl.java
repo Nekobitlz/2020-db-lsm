@@ -30,18 +30,7 @@ public class TransactionDAOImpl implements TransactionDAO {
     }
 
     @Override
-    public void commit() {
-        coordinator.commitTransactions();
-    }
-
-    @Override
-    public void abort() {
-        coordinator.abortTransactions();
-    }
-
-    @Override
     public void close() {
-        coordinator.abortTransactions();
     }
 
     @Override

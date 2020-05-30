@@ -80,22 +80,6 @@ public class Coordinator {
     }
 
     /**
-     * Commits all transactions from transaction list.
-     */
-    public void commitTransactions() {
-        transactions.forEach((key, value) -> value.commit());
-        transactions.clear();
-    }
-
-    /**
-     * Cancels all transactions from transaction list.
-     */
-    public void abortTransactions() {
-        transactions.forEach((key, value) -> value.abort());
-        transactions.clear();
-    }
-
-    /**
      * Returns folder where can store temporary files.
      * @param tag target tag
      * @return folder

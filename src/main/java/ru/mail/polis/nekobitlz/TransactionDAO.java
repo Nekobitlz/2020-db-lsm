@@ -15,16 +15,6 @@ public interface TransactionDAO extends Closeable {
     Transaction beginTransaction(String tag);
 
     /**
-     * Applies all transaction changes.
-     */
-    void commit();
-
-    /**
-     * Сancels all transaction changes.
-     */
-    void abort();
-
-    /**
      * Returns the data store.
      * @return data store
      */

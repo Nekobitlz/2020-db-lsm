@@ -179,6 +179,7 @@ public class Transaction implements Closeable {
     @Override
     public void close() {
         changes.iterator(TOMBSTONE).forEachRemaining((item) -> coordinator.unlockKey(item.getKey()));
+        coordinator.removeTransaction(this);
         try {
             Files.deleteIfExists(coordinator.getFolder(tag).toPath());
         } catch (IOException e) {
