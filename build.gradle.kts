@@ -42,7 +42,7 @@ val run by tasks.getting(JavaExec::class) {
 
 tasks {
     test {
-        maxHeapSize = "128m"
+        maxHeapSize = "256m"
         useJUnitPlatform()
     }
 }
@@ -52,7 +52,7 @@ application {
     mainClassName = "ru.mail.polis.Client"
 
     // And limit Xmx
-    applicationDefaultJvmArgs = listOf("-Xmx128m")
+    applicationDefaultJvmArgs = listOf("-Xmx256m")
 }
 
 // Fail on warnings
