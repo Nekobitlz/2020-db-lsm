@@ -31,12 +31,12 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Vadim Tsesko
  */
-final class Files {
+public final class Files {
     private Files() {
         // Don't instantiate
     }
 
-    static void recursiveDelete(@NotNull final File path) throws IOException {
+    public static void recursiveDelete(@NotNull final File path) throws IOException {
         java.nio.file.Files.walkFileTree(
                 path.toPath(),
                 new SimpleFileVisitor<>() {
@@ -59,7 +59,7 @@ final class Files {
                 });
     }
 
-    static long directorySize(@NotNull final File path) throws IOException {
+    public static long directorySize(@NotNull final File path) throws IOException {
         final AtomicLong result = new AtomicLong(0L);
         java.nio.file.Files.walkFileTree(
                 path.toPath(),

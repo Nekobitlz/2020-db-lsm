@@ -28,7 +28,7 @@ import java.io.IOException;
  * @author Vadim Tsesko
  */
 public final class DAOFactory {
-    static final long MAX_HEAP = 128 * 1024 * 1024;
+    public static final long MAX_HEAP = 128 * 1024 * 1024;
 
     private DAOFactory() {
         // Not instantiatable
@@ -41,7 +41,7 @@ public final class DAOFactory {
      * @return a storage instance
      */
     @NotNull
-    static DAO create(@NotNull final File data) throws IOException {
+    public static DAO create(@NotNull final File data) throws IOException {
         if (Runtime.getRuntime().maxMemory() > MAX_HEAP) {
             throw new IllegalStateException("The heap is too big. Consider setting Xmx.");
         }

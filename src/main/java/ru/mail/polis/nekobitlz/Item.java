@@ -20,7 +20,7 @@ public class Item {
     /**
      * Data class to store the item.
      */
-    Item(final ByteBuffer key, final ByteBuffer value, final long timeStamp) {
+    public Item(final ByteBuffer key, final ByteBuffer value, final long timeStamp) {
         this.key = key;
         this.value = value;
         this.timeStamp = timeStamp;
