@@ -3,6 +3,7 @@ import net.ltgt.gradle.errorprone.errorprone
 plugins {
     java
     application
+    maven
     id("net.ltgt.errorprone") version "0.8.1"
 }
 
@@ -13,6 +14,7 @@ java {
 
 repositories {
     jcenter()
+    mavenCentral()
 }
 
 dependencies {
